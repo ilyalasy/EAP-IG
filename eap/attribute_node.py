@@ -10,8 +10,9 @@ from tqdm import tqdm
 from einops import einsum
 
 from .graph import Graph
-from .attribute import tokenize_plus, compute_mean_activations
+from .attribute import tokenize_plus, compute_mean_activations,get_device
 
+device = get_device()
 
 def make_hooks_and_matrices(model: HookedTransformer, graph: Graph, batch_size:int , n_pos:int, scores: Optional[Tensor], neuron:bool=False):
     """Makes a matrix, and hooks to fill it and the score matrix up
@@ -26,7 +27,7 @@ def make_hooks_and_matrices(model: HookedTransformer, graph: Graph, batch_size:i
     Returns:
         Tuple[Tuple[List, List, List], Tensor]: The final tensor ([batch, pos, n_src_nodes, d_model]) stores activation differences, i.e. corrupted - clean activations. The first set of hooks will add in the activations they are run on (run these on corrupted input), while the second set will subtract out the activations they are run on (run these on clean input). The third set of hooks will compute the gradients and update the scores matrix that you passed in. 
     """
-    activation_difference = torch.zeros((batch_size, n_pos, graph.n_forward, model.cfg.d_model), device='cuda', dtype=model.cfg.dtype)
+    activation_difference = torch.zeros((batch_size, n_pos, graph.n_forward, model.cfg.d_model), device=device, dtype=model.cfg.dtype)
 
     processed_attn_layers = set()
     fwd_hooks_clean = []
@@ -108,9 +109,9 @@ def get_scores_eap(model: HookedTransformer, graph: Graph, dataloader:DataLoader
         Tensor: a [src_nodes, dst_nodes] tensor of scores for each edge
     """
     if neuron:
-        scores = torch.zeros((graph.n_forward, graph.cfg.d_model), device='cuda', dtype=model.cfg.dtype)    
+        scores = torch.zeros((graph.n_forward, graph.cfg.d_model), device=device, dtype=model.cfg.dtype)    
     else:
-        scores = torch.zeros((graph.n_forward), device='cuda', dtype=model.cfg.dtype)    
+        scores = torch.zeros((graph.n_forward), device=device, dtype=model.cfg.dtype)    
 
     if 'mean' in intervention:
         assert intervention_dataloader is not None, "Intervention dataloader must be provided for mean interventions"
@@ -167,9 +168,9 @@ def get_scores_eap_ig(model: HookedTransformer, graph: Graph, dataloader: DataLo
         Tensor: a [src_nodes, dst_nodes] tensor of scores for each edge
     """
     if neuron:
-        scores = torch.zeros((graph.n_forward, graph.cfg.d_model), device='cuda', dtype=model.cfg.dtype)    
+        scores = torch.zeros((graph.n_forward, graph.cfg.d_model), device=device, dtype=model.cfg.dtype)    
     else:
-        scores = torch.zeros((graph.n_forward), device='cuda', dtype=model.cfg.dtype)    
+        scores = torch.zeros((graph.n_forward), device=device, dtype=model.cfg.dtype)    
     
     total_items = 0
     dataloader = dataloader if quiet else tqdm(dataloader)
@@ -227,9 +228,9 @@ def get_scores_ig_activations(model: HookedTransformer, graph: Graph, dataloader
             means = means.unsqueeze(0)
 
     if neuron:
-        scores = torch.zeros((graph.n_forward, graph.cfg.d_model), device='cuda', dtype=model.cfg.dtype)    
+        scores = torch.zeros((graph.n_forward, graph.cfg.d_model), device=device, dtype=model.cfg.dtype)    
     else:
-        scores = torch.zeros((graph.n_forward), device='cuda', dtype=model.cfg.dtype)    
+        scores = torch.zeros((graph.n_forward), device=device, dtype=model.cfg.dtype)    
     
     total_items = 0
     dataloader = dataloader if quiet else tqdm(dataloader)
@@ -304,9 +305,9 @@ def get_scores_clean_corrupted(model: HookedTransformer, graph: Graph, dataloade
         Tensor: a [src_nodes, dst_nodes] tensor of scores for each edge
     """
     if neuron:
-        scores = torch.zeros((graph.n_forward, graph.cfg.d_model), device='cuda', dtype=model.cfg.dtype)    
+        scores = torch.zeros((graph.n_forward, graph.cfg.d_model), device=device, dtype=model.cfg.dtype)    
     else:
-        scores = torch.zeros((graph.n_forward), device='cuda', dtype=model.cfg.dtype)    
+        scores = torch.zeros((graph.n_forward), device=device, dtype=model.cfg.dtype)    
     
     total_items = 0
     dataloader = dataloader if quiet else tqdm(dataloader)

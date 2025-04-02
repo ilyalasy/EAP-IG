@@ -5,37 +5,13 @@ import torch
 from torch.utils.data import DataLoader
 from torch import Tensor
 from transformer_lens import HookedTransformer
-from transformer_lens.utils import get_attention_mask
+
 from tqdm import tqdm
 from einops import einsum
 
 from .graph import Graph, LogitNode, AttentionNode
-
-def tokenize_plus(model: HookedTransformer, inputs: List[str], max_length: Optional[int] = None):
-    """
-    Tokenizes the input strings using the provided model.
-
-    Args:
-        model (HookedTransformer): The model used for tokenization.
-        inputs (List[str]): The list of input strings to be tokenized.
-
-    Returns:
-        tuple: A tuple containing the following elements:
-            - tokens (torch.Tensor): The tokenized inputs.
-            - attention_mask (torch.Tensor): The attention mask for the tokenized inputs.
-            - input_lengths (torch.Tensor): The lengths of the tokenized inputs.
-            - n_pos (int): The maximum sequence length of the tokenized inputs.
-    """
-    if max_length is not None:
-        old_n_ctx = model.cfg.n_ctx
-        model.cfg.n_ctx = max_length
-    tokens = model.to_tokens(inputs, prepend_bos=True, padding_side='right', truncate=(max_length is not None))
-    if max_length is not None:
-        model.cfg.n_ctx = old_n_ctx
-    attention_mask = get_attention_mask(model.tokenizer, tokens, True)
-    input_lengths = attention_mask.sum(1)
-    n_pos = attention_mask.size(1)
-    return tokens, attention_mask, input_lengths, n_pos
+from .utils import get_device, tokenize_plus
+device = get_device()
 
 def make_hooks_and_matrices(model: HookedTransformer, graph: Graph, batch_size:int , n_pos:int, scores: Optional[Tensor]):
     """Makes a matrix, and hooks to fill it and the score matrix up
@@ -189,9 +165,9 @@ def compute_mean_activations(model: HookedTransformer, graph: Graph, dataloader:
         if not means_initialized:
             # here is where we store the means
             if per_position:
-                means = torch.zeros((n_pos, graph.n_forward, model.cfg.d_model), device='cuda', dtype=model.cfg.dtype)
+                means = torch.zeros((n_pos, graph.n_forward, model.cfg.d_model), device=device, dtype=model.cfg.dtype)
             else:
-                means = torch.zeros((graph.n_forward, model.cfg.d_model), device='cuda', dtype=model.cfg.dtype)
+                means = torch.zeros((graph.n_forward, model.cfg.d_model), device=device, dtype=model.cfg.dtype)
             means_initialized = True
 
         if per_position:
@@ -219,7 +195,7 @@ def get_scores_eap(model: HookedTransformer, graph: Graph, dataloader:DataLoader
     Returns:
         Tensor: a [src_nodes, dst_nodes] tensor of scores for each edge
     """
-    scores = torch.zeros((graph.n_forward, graph.n_backward), device='cuda', dtype=model.cfg.dtype)    
+    scores = torch.zeros((graph.n_forward, graph.n_backward), device=device, dtype=model.cfg.dtype)    
 
     if 'mean' in intervention:
         assert intervention_dataloader is not None, "Intervention dataloader must be provided for mean interventions"
@@ -275,7 +251,7 @@ def get_scores_eap_ig(model: HookedTransformer, graph: Graph, dataloader: DataLo
     Returns:
         Tensor: a [src_nodes, dst_nodes] tensor of scores for each edge
     """
-    scores = torch.zeros((graph.n_forward, graph.n_backward), device='cuda', dtype=model.cfg.dtype)    
+    scores = torch.zeros((graph.n_forward, graph.n_backward), device=device, dtype=model.cfg.dtype)    
     
     total_items = 0
     dataloader = dataloader if quiet else tqdm(dataloader)
@@ -354,10 +330,10 @@ def get_scores_ig_activations(model: HookedTransformer, graph: Graph, dataloader
         if not per_position:
             means = means.unsqueeze(0)
 
-    scores = torch.zeros((graph.n_forward, graph.n_backward), device='cuda', dtype=model.cfg.dtype)    
+    scores = torch.zeros((graph.n_forward, graph.n_backward), device=device, dtype=model.cfg.dtype)    
     
     total_items = 0
-    dataloader = dataloader if quiet else tqdm(dataloader)
+    dataloader = dataloader if quiet else tqdm(dataloader)  
     for clean, corrupted, label in dataloader:
         batch_size = len(clean)
         total_items += batch_size
@@ -428,7 +404,7 @@ def get_scores_clean_corrupted(model: HookedTransformer, graph: Graph, dataloade
         _type_: _description_
     """
 
-    scores = torch.zeros((graph.n_forward, graph.n_backward), device='cuda', dtype=model.cfg.dtype)    
+    scores = torch.zeros((graph.n_forward, graph.n_backward), device=device, dtype=model.cfg.dtype)    
     
     total_items = 0
     dataloader = dataloader if quiet else tqdm(dataloader)

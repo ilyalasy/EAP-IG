@@ -7,8 +7,10 @@ from transformer_lens import HookedTransformer
 from tqdm import tqdm
 from einops import einsum
 
-from .attribute import tokenize_plus, make_hooks_and_matrices, compute_mean_activations
+from .attribute import tokenize_plus, make_hooks_and_matrices, compute_mean_activations, get_device
 from .graph import Graph, AttentionNode
+
+device = get_device()
 
 
 def evaluate_graph(model: HookedTransformer, graph: Graph, dataloader: DataLoader, metrics: Union[Callable[[Tensor],Tensor], List[Callable[[Tensor], Tensor]]], quiet=False, intervention: Literal['patching', 'zero', 'mean','mean-positional']='patching', intervention_dataloader: Optional[DataLoader]=None, skip_clean:bool=True) -> Union[torch.Tensor, List[torch.Tensor]]:
@@ -64,7 +66,7 @@ def evaluate_graph(model: HookedTransformer, graph: Graph, dataloader: DataLoade
         
     if model.cfg.use_normalization_before_and_after:
         # If the model also normalizes the outputs of attention heads, we'll need to take that into account when evaluating the graph.
-        attention_head_mask = torch.zeros((graph.n_forward, model.cfg.n_layers), device='cuda', dtype=model.cfg.dtype)
+        attention_head_mask = torch.zeros((graph.n_forward, model.cfg.n_layers), device=device, dtype=model.cfg.dtype)
         for node in graph.nodes.values():
             if isinstance(node, AttentionNode):
                 attention_head_mask[graph.forward_index(node), node.layer] = 1
