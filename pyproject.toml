@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eap"
+version = "1.0.0"
+authors = [
+  { name="Michael Hanna", email="mh2parker@gmail.com" },
+]
+description = "This library contains various resources for finding circuits in autoregressive transformer LMs."
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+  "torch",
+  "transformer-lens",
+  "tqdm",
+  "einops",
+  "numpy",
+  "matplotlib",
+  "pygraphviz",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/pypa/sampleproject"
+"Bug Tracker" = "https://github.com/pypa/sampleproject/issues"
+
+# Setuptools specific configuration (if needed for find_packages equivalent)
+# [tool.setuptools.packages.find]
+# where = ["."]  # Adjust if your packages are not in the root
+# include = ["eap*"]
+# exclude = [] # Add packages to exclude if needed 
